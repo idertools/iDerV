@@ -1,0 +1,6 @@
+{
+  "name": "ider VPS",
+  "description": "Local Node VPS Manager with Docker and SSH support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
