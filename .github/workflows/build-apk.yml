@@ -5,6 +5,9 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,26 +16,57 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '17'
+        java-version: '21'
 
     - name: Set up Android SDK
       uses: android-actions/setup-android@v3
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '9.3.1'
+
+    - name: Prepare Secrets and Keystore
+      run: |
+        # Restore debug keystore from base64 if available
+        if [ -f "debug.keystore.base64" ]; then
+          base64 -d debug.keystore.base64 > debug.keystore
+        fi
+        # Ensure .env exists to prevent build failures
+        touch .env
 
     - name: Build APK with Gradle
       run: |
-        gradle wrapper --gradle-version 8.4
+        if [ ! -f "gradlew" ]; then
+          gradle wrapper --gradle-version 9.3.1
+        fi
         chmod +x gradlew
         ./gradlew assembleDebug --stacktrace --no-daemon
+        cp app/build/outputs/apk/debug/app-debug.apk ider-vps.apk
 
-    - name: Upload APK
+    - name: Upload APK as Workflow Artifact
       uses: actions/upload-artifact@v4
       with:
         name: iderVPS-APK
-        path: app/build/outputs/apk/debug/*.apk
+        path: ider-vps.apk
+
+    - name: Publish Direct-Install APK to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v1.0.0
+        name: "ider VPS v1.0.0 (Official Release)"
+        body: |
+          🚀 **ider VPS (Local Node Android)**
+          
+          Unduh file APK resmi di bawah ini dan pasang langsung di smartphone Android Anda.
+          - File: `ider-vps.apk`
+          - Tipe: Android Application Package (Direct Install)
+        files: |
+          ider-vps.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
