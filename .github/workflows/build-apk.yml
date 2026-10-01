@@ -59,13 +59,15 @@ jobs:
     - name: Publish Direct-Install APK to GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.0
-        name: "ider VPS v1.0.0 (Official Release)"
+        tag_name: v1.0.${{ github.run_number }}
+        name: "ider VPS v1.0.${{ github.run_number }}"
+        make_latest: true
         body: |
-          🚀 **ider VPS (Local Node Android)**
+          🚀 **ider VPS (Local Node Android) - Build #${{ github.run_number }}**
           
           Unduh file APK resmi di bawah ini dan pasang langsung di smartphone Android Anda.
           - File: `ider-vps.apk`
+          - Versi: `v1.0.${{ github.run_number }}`
           - Tipe: Android Application Package (Direct Install)
         files: |
           ider-vps.apk
