@@ -22,9 +22,6 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
-
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       with:
@@ -32,6 +29,8 @@ jobs:
 
     - name: Prepare Secrets and Keystore
       run: |
+        # Accept Android SDK licenses
+        yes | sdkmanager --licenses || true
         # Restore debug keystore from base64 if available
         if [ -f "debug.keystore.base64" ]; then
           base64 -d debug.keystore.base64 > debug.keystore
