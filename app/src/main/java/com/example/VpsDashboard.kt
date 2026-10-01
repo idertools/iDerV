@@ -1,5 +1,7 @@
 package com.example
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -110,7 +112,7 @@ fun VpsDashboard(
             )
         }
         item {
-            AiAgentGatewayCard(localIp = localIp)
+            AiAgentGatewayCard(localIp = localIp, isServiceRunning = isServiceRunning)
         }
         item {
             GuideCard()
@@ -590,13 +592,15 @@ private fun StatusBadge(state: ContainerState, onClick: () -> Unit) {
 }
 
 /**
- * AI Agent Gateway Card with dedicated 1-CLICK COPY BUTTONS
- * for Gateway URL and Node Access Token!
+ * AI Agent Gateway Card with dedicated 1-CLICK COPY BUTTONS,
+ * live port 8080 status indicator, test button, and troubleshooting tips.
  */
 @Composable
-private fun AiAgentGatewayCard(localIp: String) {
+private fun AiAgentGatewayCard(localIp: String, isServiceRunning: Boolean) {
+    val context = LocalContext.current
     val gatewayUrl = "http://$localIp:8080/api"
     val token = "ider-token-xyz123"
+    var showHelp by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -605,18 +609,49 @@ private fun AiAgentGatewayCard(localIp: String) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Link,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "AI Agent Gateway",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Link,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "AI Agent Gateway",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+
+                // Live Status Badge
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isServiceRunning) Color(0xFFD1FAE5) else Color(0xFFFEE2E2)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(if (isServiceRunning) ButtonActiveGreen else Color(0xFFDC2626))
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isServiceRunning) "PORT 8080 AKTIF" else "OFFLINE",
+                            color = if (isServiceRunning) ButtonActiveGreenDark else Color(0xFF991B1B),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -636,6 +671,71 @@ private fun AiAgentGatewayCard(localIp: String) {
                 value = token,
                 toastMessage = "Token Akses disalin!"
             )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Direct Test in Browser Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(gatewayUrl))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Gagal membuka browser", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Tes di Browser", fontSize = 12.sp)
+                }
+
+                TextButton(
+                    onClick = { showHelp = !showHelp },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Outlined.Info, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(if (showHelp) "Tutup Panduan" else "Solusi Koneksi Gagal", fontSize = 12.sp)
+                }
+            }
+
+            // Connection Troubleshooting Guide
+            AnimatedVisibility(visible = showHelp) {
+                Column(
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFFEF3C7))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "⚠️ Mengapa Web Muncul 'Failed to fetch'?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Color(0xFF92400E)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "1. Pastikan tombol layanan VPS di atas berstatus 'AKTIF' (hijau) agar port 8080 terbuka.\n" +
+                               "2. Web iderg.my.id menggunakan HTTPS, sedangkan IP lokal menggunakan HTTP. Browser Chrome otomatis memblokir koneksi ini demi keamanan (Mixed Content).\n\n" +
+                               "Solusi di Chrome HP:\n" +
+                               "• Di tab iderg.my.id, klik ikon gembok di sebelah kiri alamat web.\n" +
+                               "• Pilih 'Setelan Situs' (Site Settings).\n" +
+                               "• Cari 'Konten tidak aman' (Insecure content) -> ubah ke 'Izinkan' (Allow).\n" +
+                               "• Refresh halaman web, lalu tekan 'CONNECT & TES NODE' kembali.",
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        color = Color(0xFF78350F)
+                    )
+                }
+            }
         }
     }
 }

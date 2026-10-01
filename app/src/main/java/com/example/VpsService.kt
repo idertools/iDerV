@@ -35,11 +35,18 @@ class VpsService : Service() {
         }
     }
 
+    private var gatewayServer: VpsGatewayServer? = null
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         _isRunning.value = true
+
+        // Start embedded HTTP Gateway on port 8080
+        gatewayServer = VpsGatewayServer(8080).apply {
+            start()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -49,8 +56,8 @@ class VpsService : Service() {
         )
 
         val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("ider VPS Local Node")
-            .setContentText("VPS is running 24/7 in background")
+            .setContentTitle("ider VPS Local Node [ONLINE]")
+            .setContentText("Gateway port 8080 aktif & siap dihubungkan")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pendingIntent)
             .build()
@@ -64,6 +71,8 @@ class VpsService : Service() {
         super.onDestroy()
         unregisterReceiver(batteryReceiver)
         _isRunning.value = false
+        gatewayServer?.stop()
+        gatewayServer = null
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
